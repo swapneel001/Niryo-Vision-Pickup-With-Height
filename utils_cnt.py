@@ -8,6 +8,8 @@ CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 
 # take an image of the workspace
+
+
 def take_workspace_img(client):
     a, mtx, dist = client.get_calibration_object()
     while 1:
@@ -40,32 +42,15 @@ def fill_holes(img):
 
 # calculate a mask
 def objs_mask(img):
-    color_hls = [[0, 0, 0], [360, 210, 255]]
+    boundaries = [([0, 50, 0], [100, 255, 100])]
+    for (lower, upper) in boundaries:
+        lower = np.array(lower, dtype="uint8")
+        upper = np.array(lower, dtype="uint8")
+        mask = cv2.inRange(img, lower, upper)
 
-    mask = threshold_hls(img, *color_hls)
-
-    kernel3 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    kernel5 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    kernel7 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    kernel11 = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))
-
-    # erode workspace markers
-    mask[:15, :] = cv2.erode(mask[:15, :], kernel7, iterations=5)
-    mask[-15:, :] = cv2.erode(mask[-15:, :], kernel7, iterations=5)
-    mask[:, :15] = cv2.erode(mask[:, :15], kernel7, iterations=5)
-    mask[:, -15:] = cv2.erode(mask[:, -15:], kernel7, iterations=5)
-
-    mask = fill_holes(mask)
-
-    mask = cv2.dilate(mask, kernel3, iterations=1)
-    mask = cv2.erode(mask, kernel5, iterations=1)
-    mask = cv2.dilate(mask, kernel11, iterations=1)
-
-    mask = fill_holes(mask)
-
-    mask = cv2.erode(mask, kernel7, iterations=1)
-
-    return mask
+    thresh = cv2.threshold(
+        mask, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    return thresh
 
 
 # rotate a numpy img
@@ -91,91 +76,109 @@ class CameraObject(object):
 
 # take an img and a mask / return an array of CameraObject
 def extract_objs(img, mask):
-    cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+    cnts, hierarchy = cv2.findContours(
+        mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
 
     objs = []
-
     initial_shape = img.shape
-
-    # surround the image with Black pixels
-    blank = np.zeros(img.shape, np.uint8)
-    img = concat_imgs([blank, img, blank], 0)
-    blank = np.zeros(img.shape, np.uint8)
-    img = concat_imgs([blank, img, blank], 1)
-
-    # for all the contour in the image, copy the corresponding object
+    selected_cnts = []
+    
     if cnts is not None:
         for cnt in cnts:
-            cx, cy = get_contour_barycenter(cnt)
-            try:
-                angle = get_contour_angle(cnt)
-            except:
-                angle = 0
-
-            # get the minimal Area Rectangle around the contour
+            bigrect= cv2.boundingRect(cnt)
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
             box = np.int0(box)
+            y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
+            #selecting contours in region of interest
+            if min(y_values) > 230 and max(y_values)<520:
+                selected_cnts.append(cnt)
+        cnt = max(selected_cnts,key = cv2.contourArea)
 
-            up = int(box[0][1])
-            down = int(box[2][1])
-            left = int(box[1][0])
-            right = int(box[3][0])
+    # for all the contour in the image, copy the corresponding object
+    if cnt is not None:
+        cx, cy = get_contour_barycenter(cnt)
+        try:
+            angle = get_contour_angle(cnt)
+        except:
+            angle = 0
 
-            size_x = right - left
-            size_y = up - down
-
-            # verify that our objects is not just a point or a line
-            if size_x <= 0 or size_y <= 0:
-                continue
-
-            # transform our rectangle into a square
-            if size_x > size_y:
-                down -= int((size_x - size_y) / 2)
-                size = size_x
-            else:
-                left -= int((size_y - size_x) / 2)
-                size = size_y
-
-            # if the square is to small, skip it
-            if size < 64:
-                continue
-
-            square = [[down, left], [left + size, down + size]]
-
-            # copy the pixels of our rectangle in a new image
-            down += initial_shape[0]
-            left += initial_shape[1]
-            img_cut = np.zeros((size, size, 3), np.uint8)
-            img_cut[:, :] = img[down: down + size, left: left + size]
-
-            # rotate the image so the object is in a vertical orientation
-            img_cut = rotate_image(img_cut, angle * 180 / math.pi)
-
-            # append the data and the image of our object
-            objs.append(CameraObject(img_cut, cx, cy, angle, cnt, box, square))
-           
-            for i in range(len(objs)):
-                print(len(objs))
-                print("Countour centre: x,y", objs[i].x, objs[i].y)
-            return objs[i]
-
-#get bounding box of object
-def bounding_box(frame,mask):
-    #box co-ordinates : x1,y1,x2,y2
-    cnts, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
-    if cnts is not None:
-        print(len(cnts))
-        cnt = max(cnts,key=cv2.contourArea)
+        # get the minimal Area Rectangle around the contour
         rect = cv2.minAreaRect(cnt)
         box = cv2.boxPoints(rect)
         box = np.int0(box)
-        cv2.drawContours(frame,[box],0,(0,255),2)
+
+        up = int(box[0][1])
+        down = int(box[2][1])
+        left = int(box[1][0])
+        right = int(box[3][0])
+
+        size_x = right - left
+        size_y = up - down
+
+        # # verify that our objects is not just a point or a line
+        # if size_x <= 0 or size_y <= 0:
+        #     continue
+
+        # transform our rectangle into a square
+        if size_x > size_y:
+            down -= int((size_x - size_y) / 2)
+            size = size_x
+        else:
+            left -= int((size_y - size_x) / 2)
+            size = size_y
+
+        # if the square is to small, skip it
+        # if size < 64:
+        #     continue
+
+        square = [[down, left], [left + size, down + size]]
+
+        # copy the pixels of our rectangle in a new image
+        down += initial_shape[0]
+        left += initial_shape[1]
+        img_cut = np.zeros((size, size, 3), np.uint8)
+        img_cut[:, :] = img[down: down + size, left: left + size]
+
+        # rotate the image so the object is in a vertical orientation
+        img_cut = rotate_image(img_cut, angle * 180 / math.pi)
+
+        # append the data and the image of our object
+        objs.append(CameraObject(img_cut, cx, cy, angle, cnt, box, square))
+
+        for i in range(len(objs)):
+            print(len(objs))
+            print("Countour centre: x,y", objs[i].x, objs[i].y)
+        return objs[i]
+
+# get bounding box of object
+
+
+def bounding_box(frame, mask):
+    # box co-ordinates : x1,y1,x2,y2
+    cnts, hierarchy = cv2.findContours(
+        mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
+    selected_cnts = []
+    if cnts is not None:
+        for cnt in cnts:
+            bigrect= cv2.boundingRect(cnt)
+            rect = cv2.minAreaRect(cnt)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+            y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
+            if min(y_values) > 230 and max(y_values)<520:
+                selected_cnts.append(cnt)
+
+        cnt = max(selected_cnts, key = cv2.contourArea)
+        bigrect = cv2.boundingRect(cnt)
+        rect = cv2.minAreaRect(cnt)
+        box = cv2.boxPoints(rect)
+        box = np.int0(box)
+        cv2.drawContours("frame",[box],0,(0,255),2)
         cv2.imshow('Bounding Box',frame)
         return box,rect
+        
     return None
-
-
 
 
 def standardize_img(img):
@@ -192,3 +195,28 @@ def standardize_img(img):
     img = np.clip(img, 0, 255)
     img = img.astype(array_type)
     return img
+
+# Uncompress and Undistort image
+
+
+def uncompress_image(compressed_image):
+    """
+    Take a compressed img and return an OpenCV image
+    :param compressed_image: compressed image
+    :return: OpenCV image
+    """
+    np_arr = np.fromstring(compressed_image, np.uint8)
+    return cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+
+
+def undistort_image(img, mtx, dist, newcameramtx=None):
+    """
+    Use camera intrinsics to undistort raw image
+    :param img: Raw Image
+    :param mtx: Camera Intrinsics matrix
+    :param dist: Distortion Coefficient
+    :param newcameramtx: Camera Intrinsics matrix after correction
+    :return: Undistorted image
+    """
+    return cv2.undistort(src=img, cameraMatrix=mtx,
+                         distCoeffs=dist, newCameraMatrix=newcameramtx)

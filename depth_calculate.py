@@ -91,6 +91,7 @@ while True:
     #extract image workspace
     try:
         color_image,depth_image = extract_img_workspace(color_image,depth_image ,workspace_ratio = 0.37)
+        print ("workspace shape is", color_image.shape)
         color_image = cv2.cvtColor(color_image,cv2.COLOR_BGR2RGB)
         #print("Size of color image is {}".format(color_image.shape))
         color_image = cv2.rotate(color_image,cv2.ROTATE_90_COUNTERCLOCKWISE)
