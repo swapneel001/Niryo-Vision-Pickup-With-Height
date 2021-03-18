@@ -47,7 +47,7 @@ def check_center_tendency(rect):
     x_values = [box[0][0], box[1][0], box[2][0], box[3][0]]
     maximum = max(x_values)
     minimum = min(x_values)
-    if maximum < 195 and minimum > 5:
+    if maximum < 197 and minimum > 3:
         return True
     else:
         return False
