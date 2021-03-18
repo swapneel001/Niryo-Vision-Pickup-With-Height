@@ -127,7 +127,6 @@ if __name__ == "__main__":
         # calculate mask for frame (black and white image)
         mask = utils_cnt.objs_mask(frame)
         cv2.imshow('mask', mask)
-        mask = cv2.rotate(mask,cv2.ROTATE_90_COUNTERCLOCKWISE)
         # drawing region of interest on the color image
         cv2.line(frame, (0, 220), (200, 220), (255, 0, 0), thickness_big)
         cv2.line(frame, (0, 520), (520, 200), (0, 0, 255), thickness_big)
