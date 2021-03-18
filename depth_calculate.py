@@ -8,9 +8,9 @@ from niryo_one_camera import *
 # set up camera
 pipe = rs.pipeline()
 config = rs.config()
-# config.enable_stream(rs.stream.depth,640,480,rs.format.z16,30)
-# config.enable_stream(rs.stream.color,640,480,rs.format.bgr8,30)
-config.enable_device_from_file("C:/Users/BHS2SGP/Desktop/recording4.bag")
+config.enable_stream(rs.stream.depth,1280,720,rs.format.z16,30)
+config.enable_stream(rs.stream.color,1280,720,rs.format.bgr8,30)
+# config.enable_device_from_file("C:/Users/BHS2SGP/Documents/20210318_142227.bag")
 
 # start reading frames
 profile = pipe.start(config)
@@ -36,7 +36,7 @@ def get_height_pixel(color_frame, color_image_workspace, rect, bigrect):
     #colorizer = rs.colorizer()
     color_image_full = np.asanyarray(color_frame.get_data())
     gray = cv2.cvtColor(color_image_full, cv2.COLOR_BGR2GRAY)
-    color_image_full = cv2.cvtColor(color_image_full, cv2.COLOR_BGR2RGB)
+    # color_image_full = cv2.cvtColor(color_image_full, cv2.COLOR_BGR2RGB)
     found = None
     for scale in np.linspace(0.2, 1.0, 50)[::-1]:
         resized = imutils.resize(gray, width=int(gray.shape[1]*scale))
@@ -94,10 +94,11 @@ while True:
 
     # extract image workspace
     try:
+        print("Trying to find workspace ")
         color_image, depth_image = extract_img_workspace(
             color_image, depth_image, workspace_ratio=0.37)
         print("workspace shape is", color_image.shape[0:2])
-        color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+        # color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
         #print("Size of color image is {}".format(color_image.shape))
         color_image = cv2.rotate(color_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
         depth_image = cv2.rotate(depth_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
