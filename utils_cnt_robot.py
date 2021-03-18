@@ -89,9 +89,9 @@ def extract_objs(img, mask):
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
             box = np.int0(box)
-            y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
+            x_values = [box[0][0],box[1][0],box[2][0],box[3][0]]
             #selecting contours in region of interest
-            if min(y_values) > 230 and max(y_values)<520:
+            if min(x_values) > 230 and max(x_values)<520:
                 selected_cnts.append(cnt)
         cnt = max(selected_cnts,key = cv2.contourArea)
 
@@ -165,8 +165,8 @@ def bounding_box(frame, mask):
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
             box = np.int0(box)
-            y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
-            if min(y_values) > 230 and max(y_values)<520:
+            x_values = [box[0][0],box[1][0],box[2][0],box[3][0]]
+            if min(x_values) > 230 and max(x_values)<520:
                 selected_cnts.append(cnt)
 
         cnt = max(selected_cnts, key = cv2.contourArea)

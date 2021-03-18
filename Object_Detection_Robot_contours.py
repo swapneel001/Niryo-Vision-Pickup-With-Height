@@ -15,7 +15,7 @@ from six import BytesIO
 import pathlib
 
 # utils_cnt has image processing functions, depth_calculate is code for RealSense
-import utils_cnt
+import utils_cnt_robot
 import depth_calculate
 
 from niryo_one_tcp_client import *
@@ -99,7 +99,7 @@ if __name__ == "__main__":
     client.connect("10.10.10.10")
     client.calibrate(CalibrateMode.AUTO)
     client.change_tool(RobotTool.VACUUM_PUMP_1)
-    client.create_workspace(workspace, pose1,pose2,pose3,pose4)
+    client.create_workspace("workspace", pose1,pose2,pose3,pose4)
 
     # initialising arrays for various data required
     key_box = []
@@ -127,10 +127,10 @@ if __name__ == "__main__":
         # calculate mask for frame (black and white image)
         mask = utils_cnt.objs_mask(frame)
         cv2.imshow('mask', mask)
-
+        mask = cv2.rotate(mask,cv2.ROTATE_90_COUNTERCLOCKWISE)
         # drawing region of interest on the color image
-        cv2.line(img_work, (0, 220), (200, 220), (255, 0, 0), thickness_big)
-        cv2.line(img_work, (0, 520), (520, 200), (0, 0, 255), thickness_big)
+        cv2.line(frame, (0, 220), (200, 220), (255, 0, 0), thickness_big)
+        cv2.line(frame, (0, 520), (520, 200), (0, 0, 255), thickness_big)
 
         # detect objects using contours and draw box around them
         # extract objects from frame
@@ -168,7 +168,7 @@ if __name__ == "__main__":
                 prev_slope = new_slope
                 if obj_found:
                     obj_found, obj = client.get_target_pose_from_rel(
-                        workspace, height, obj.x/im_width, obj.y/im_height, obj.angle)
+                        "workspace", height, obj.x/im_width, obj.y/im_height, obj.angle)
                     client.pick_from_pose(*obj.to_list())
                     client.place_from_pose(*drop_pose.to_list())
                 client.move_pose(*observation_pose.to_list())

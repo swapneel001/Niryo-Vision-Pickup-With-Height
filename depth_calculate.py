@@ -1,5 +1,5 @@
 import pyrealsense2 as rs
-import utils_cnt
+import utils_cnt_rs
 import cv2
 import numpy as np
 import imutils
@@ -72,7 +72,7 @@ def get_height_pixel(color_frame, color_image_workspace, rect, bigrect):
 
 
 # function to get object co-ordinates
-# def distance():
+#def distance():
 while True:
     # read and align colour and depth frame
     try:
@@ -121,12 +121,12 @@ while True:
     # cv2.imshow("mask",mask)
 
     thresh = cv2.threshold(mask, 0, 255,
-                           cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+                        cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
     cv2.imshow("thresh", thresh)
 
     # getting contours of objects (black pixels) on belt (white pixels)
     cnts, heirarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                                       cv2.CHAIN_APPROX_SIMPLE)[-2:]
+                                    cv2.CHAIN_APPROX_SIMPLE)[-2:]
 
     cv2.line(color_image, (220, 0), (220, 200), (0, 0, 255), thickness_big)
     cv2.line(color_image, (520, 0), (520, 200), (0, 0, 255), thickness_big)
@@ -166,4 +166,4 @@ while True:
         if key == 27:
             quit()
         # if obj_found is True:
-            # return distance
+        #     return distance
