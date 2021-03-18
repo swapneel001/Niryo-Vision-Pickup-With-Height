@@ -66,6 +66,23 @@ def take_img(client):
 
     return True, img_work
 
+#Defining co-ordinates of poses for workspace 
+pose1 = PoseObject(
+    x=0.669, y=0.166, z=0.002,
+    roll=-2.602, pitch=0.96, yaw=0.500,
+)
+pose2 = PoseObject(
+    x=0.679, y=-0.028, z=0.002,
+    roll=3.134, pitch=1.115, yaw=-0.071,
+)
+pose3 = PoseObject(
+    x=0.187, y=-0.028, z=0.002,
+    roll=2.833, pitch=1.471, yaw=2.269,
+)
+pose4 = PoseObject(
+    x=0.191, y=0.166, z=0.002,
+    roll=-0.215, pitch=1.078, yaw=2.269,
+)
 
 drop_pose = PoseObject(  # position for the robot to place object
     x=0.038, y=-0.107, z=0.136,
@@ -82,7 +99,7 @@ if __name__ == "__main__":
     client.connect("10.10.10.10")
     client.calibrate(CalibrateMode.AUTO)
     client.change_tool(RobotTool.VACUUM_PUMP_1)
-    workspace = "workspace1"
+    client.create_workspace(workspace, pose1,pose2,pose3,pose4)
 
     # initialising arrays for various data required
     key_box = []
