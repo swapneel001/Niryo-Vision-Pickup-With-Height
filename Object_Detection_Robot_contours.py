@@ -6,13 +6,9 @@ import numpy as np
 import sys
 from threading import Thread
 import importlib.util
-import matplotlib.pyplot as plt
 import time
 from PIL import Image, ImageDraw, ImageFont
 import io
-import scipy.misc
-from six import BytesIO
-import pathlib
 
 # utils_cnt has image processing functions, depth_calculate is code for RealSense
 import utils_cnt_robot
@@ -20,6 +16,7 @@ import depth_calculate
 
 from niryo_one_tcp_client import *
 from niryo_one_camera import *
+from robot_poses import observation_pose, drop_pose, pose1, pose2, pose3, pose4
 
 # CAMERA_WIDTH = 640
 # CAMERA_HEIGHT = 480
@@ -28,10 +25,13 @@ from niryo_one_camera import *
 
 
 def get_slope(rect):
-    if rect is None:
+    try:
+        if rect is None:
+            return None
+        slope = rect[1][0]/rect[1][1]
+        return slope
+    except:
         return None
-    slope = rect[1][0]/rect[1][1]
-    return slope
 
 
 def get_area(rect):
@@ -42,6 +42,7 @@ def get_area(rect):
 
 
 def check_center_tendency(rect):
+    """Check if object is inside the workspace completely"""
     box = cv2.boxPoints(rect)
     box = np.int0(box)
     x_values = [box[0][0], box[1][0], box[2][0], box[3][0]]
@@ -53,46 +54,15 @@ def check_center_tendency(rect):
         return False
 
 # capture workspace image
-
-
 def take_img(client):
-    a, mtx, dist = client.get_calibration_object()
-    # while 1:
-    a, img_compressed = client.get_img_compressed()
-    img_raw = utils_cnt.uncompress_image(img_compressed)
-    img_work = utils_cnt.undistort_image(img_raw, mtx, dist)
-    img_work, _ = extract_img_workspace(
-        img_work, img_work, workspace_ratio=0.37)
-
+    img_work = depth_calculate.get_frames()
+    try:
+        img_work,_ = extract_img_workspace(
+            img_work, img_work, workspace_ratio=0.37)
+        print("Workspace shape at robot side", img_work.shape)
+    except:
+        print("No workspace detected")
     return True, img_work
-
-#Defining co-ordinates of poses for workspace 
-pose1 = PoseObject(
-    x=0.669, y=0.166, z=0.002,
-    roll=-2.602, pitch=0.96, yaw=0.500,
-)
-pose2 = PoseObject(
-    x=0.679, y=-0.028, z=0.002,
-    roll=3.134, pitch=1.115, yaw=-0.071,
-)
-pose3 = PoseObject(
-    x=0.187, y=-0.028, z=0.002,
-    roll=2.833, pitch=1.471, yaw=2.269,
-)
-pose4 = PoseObject(
-    x=0.191, y=0.166, z=0.002,
-    roll=-0.215, pitch=1.078, yaw=2.269,
-)
-
-drop_pose = PoseObject(  # position for the robot to place object
-    x=0.038, y=-0.107, z=0.136,
-    roll=-0.084, pitch=1.428, yaw=-1.194,
-)
-observation_pose = PoseObject(  # position for the robot to watch the workspace
-    x=0.111, y=0.007, z=0.225,
-    roll=0.255, pitch=0.992, yaw=0.070,
-)
-
 if __name__ == "__main__":
     # Setting up Niryo One
     client = NiryoOneClient()
@@ -118,38 +88,35 @@ if __name__ == "__main__":
         a, frame = take_img(client)
         if (frame is None):
             continue
-        # print(frame.dtype)
-        # print(frame.shape)
-        frame = utils_cnt.standardize_img(frame)
+        frame = utils_cnt_robot.standardize_img(frame)
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(frame)
         im_width, im_height = image.size
-
         # calculate mask for frame (black and white image)
-        mask = utils_cnt.objs_mask(frame)
+        mask = utils_cnt_robot.objs_mask(frame)
         cv2.imshow('mask', mask)
         # drawing region of interest on the color image
         cv2.line(frame, (0, 220), (200, 220), (255, 0, 0), thickness_big)
-        cv2.line(frame, (0, 520), (520, 200), (0, 0, 255), thickness_big)
-
+        cv2.line(frame, (0, 520), (200, 520), (0, 0, 255), thickness_big)
+        cv2.imshow("Robot Camera frame", frame)
         # detect objects using contours and draw box around them
-        # extract objects from frame
         obj_found = True
-        obj = utils_cnt.extract_objs(frame, mask)
-        if obj is None:
+        try:
+             bounding_box, rect = utils_cnt_robot.bounding_box(frame, mask)
+        except TypeError:
+            print("No object detected")
             obj_found = False
-        # box co-ordinates : x1,y1,x2,y2
-        bounding_box, rect = utils_cnt.bounding_box(frame, mask)
+            continue 
 
         key = True
         new_area = get_area(rect)
         new_slope = get_slope(rect)
-
-        # check if box is inside the camera workspace (near the center): this function will be more useful
-        # during start stop when object is initially moving
+        centre, angle = rect[0],rect[2] #centre and angle of rotation of contour
+        print("Centre of contour is", centre)
 
         center_tendency = check_center_tendency(rect)
-        # if(center_tendency):
-        print("center object")
+        if(center_tendency):
+            print("center object")
         if not ((new_area >= 0.95*prev_area and new_area <= 1.05*prev_area)):
             if(new_slope != prev_slope):
                 # use realsense data to get object distance
@@ -167,7 +134,7 @@ if __name__ == "__main__":
                 prev_slope = new_slope
                 if obj_found:
                     obj_found, obj = client.get_target_pose_from_rel(
-                        "workspace", height, obj.x/im_width, obj.y/im_height, obj.angle)
+                        "workspace", height, centre[0]/im_width, centre[1]/im_height, angle)
                     client.pick_from_pose(*obj.to_list())
                     client.place_from_pose(*drop_pose.to_list())
                 client.move_pose(*observation_pose.to_list())

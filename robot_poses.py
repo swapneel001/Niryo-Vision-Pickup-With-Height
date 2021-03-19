@@ -1,3 +1,6 @@
+from niryo_one_tcp_client import *
+from niryo_one_camera import *
+
 #Defining co-ordinates of poses for workspace 
 pose1 = PoseObject(
     x=0.669, y=0.166, z=0.002,
