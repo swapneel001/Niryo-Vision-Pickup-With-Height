@@ -54,22 +54,26 @@ def check_center_tendency(rect):
         return False
 
 # capture workspace image
+
+
 def take_img(client):
     img_work = depth_calculate.get_frames()
     try:
-        img_work,_ = extract_img_workspace(
+        img_work, _ = extract_img_workspace(
             img_work, img_work, workspace_ratio=0.37)
         print("Workspace shape at robot side", img_work.shape)
     except:
         print("No workspace detected")
     return True, img_work
+
+
 if __name__ == "__main__":
     # Setting up Niryo One
     client = NiryoOneClient()
     client.connect("10.10.10.10")
     client.calibrate(CalibrateMode.AUTO)
     client.change_tool(RobotTool.VACUUM_PUMP_1)
-    client.create_workspace("workspace", pose1,pose2,pose3,pose4)
+    client.create_workspace("workspace", pose1, pose2, pose3, pose4)
 
     # initialising arrays for various data required
     key_box = []
@@ -102,16 +106,17 @@ if __name__ == "__main__":
         # detect objects using contours and draw box around them
         obj_found = True
         try:
-             bounding_box, rect = utils_cnt_robot.bounding_box(frame, mask)
+            bounding_box, rect = utils_cnt_robot.bounding_box(frame, mask)
         except TypeError:
             print("No object detected")
             obj_found = False
-            continue 
+            continue
 
         key = True
         new_area = get_area(rect)
         new_slope = get_slope(rect)
-        centre, angle = rect[0],rect[2] #centre and angle of rotation of contour
+        # centre and angle of rotation of contour
+        centre, angle = rect[0], rect[2]
         print("Centre of contour is", centre)
 
         center_tendency = check_center_tendency(rect)

@@ -34,30 +34,8 @@ def objs_mask(img):
         mask, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
     return thresh
 
-
-# rotate a numpy img
-def rotate_image(image, angle):
-    image_center = tuple(np.array(image.shape[1::-1]) / 2)
-    rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-    result = cv2.warpAffine(
-        image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
-    return result
-
-
-class CameraObject(object):
-    def __init__(self, img, x=None, y=None, angle=None, cnt=None, box=None, square=None):
-        self.img = img
-        self.angle = angle
-        self.x = x
-        self.y = y
-        self.cnt = cnt
-        self.box = box
-        self.square = square
-        self.type = None
-
-# get bounding box of object
 def bounding_box(frame, mask):
-    # box co-ordinates : x1,y1,x2,y2
+    """Get bounding box of object"""
     cnts, hierarchy = cv2.findContours(
         mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
     selected_cnts = []
@@ -81,7 +59,6 @@ def bounding_box(frame, mask):
         
     return None
 
-
 def standardize_img(img):
     array_type = img.dtype
 
@@ -98,8 +75,6 @@ def standardize_img(img):
     return img
 
 # Uncompress and Undistort image
-
-
 def uncompress_image(compressed_image):
     """
     Take a compressed img and return an OpenCV image
@@ -121,80 +96,3 @@ def undistort_image(img, mtx, dist, newcameramtx=None):
     """
     return cv2.undistort(src=img, cameraMatrix=mtx,
                          distCoeffs=dist, newCameraMatrix=newcameramtx)
-
-# take an img and a mask / return an array of CameraObject
-def extract_objs(img, mask):
-    cnts, hierarchy = cv2.findContours(
-        mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
-
-    objs = []
-    initial_shape = img.shape
-    selected_cnts = []
-    
-    if cnts is not None:
-        for cnt in cnts:
-            bigrect= cv2.boundingRect(cnt)
-            rect = cv2.minAreaRect(cnt)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
-            y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
-            #selecting contours in region of interest
-            if min(y_values) > 220 and max(y_values)<520:
-                selected_cnts.append(cnt)
-        #cnt = max(selected_cnts,key = cv2.contourArea)
-
-    # for all the contour in the image, copy the corresponding object
-    if cnt is not None:
-        cx, cy = get_contour_barycenter(cnt)
-        try:
-            angle = get_contour_angle(cnt)
-        except:
-            angle = 0
-
-        # get the minimal Area Rectangle around the contour
-        rect = cv2.minAreaRect(cnt)
-        box = cv2.boxPoints(rect)
-        box = np.int0(box)
-
-        up = int(box[0][1])
-        down = int(box[2][1])
-        left = int(box[1][0])
-        right = int(box[3][0])
-
-        size_x = right - left
-        size_y = up - down
-
-        # # verify that our objects is not just a point or a line
-        # if size_x <= 0 or size_y <= 0:
-        #     continue
-
-        # transform our rectangle into a square
-        if size_x > size_y:
-            down -= int((size_x - size_y) / 2)
-            size = size_x
-        else:
-            left -= int((size_y - size_x) / 2)
-            size = size_y
-
-        # if the square is to small, skip it
-        # if size < 64:
-        #     continue
-
-        square = [[down, left], [left + size, down + size]]
-
-        # copy the pixels of our rectangle in a new image
-        down += initial_shape[0]
-        left += initial_shape[1]
-        img_cut = np.zeros((size, size, 3), np.uint8)
-        img_cut[:, :] = img[down: down + size, left: left + size]
-
-        # rotate the image so the object is in a vertical orientation
-        img_cut = rotate_image(img_cut, angle * 180 / math.pi)
-
-        # append the data and the image of our object
-        objs.append(CameraObject(img_cut, cx, cy, angle, cnt, box, square))
-
-        for i in range(len(objs)):
-            print(len(objs))
-            print("Countour centre: x,y", objs[i].x, objs[i].y)
-        return objs[i]

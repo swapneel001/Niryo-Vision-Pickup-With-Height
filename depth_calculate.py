@@ -8,10 +8,10 @@ from niryo_one_camera import *
 # set up camera
 pipe = rs.pipeline()
 config = rs.config()
-# config.enable_stream(rs.stream.depth,1280,720,rs.format.z16,30)
-# config.enable_stream(rs.stream.color,1280,720,rs.format.bgr8,30)
-config.enable_device_from_file(
-    "C:/Users/BHS2SGP/Documents/20210318_142227.bag")
+config.enable_stream(rs.stream.depth,1280,720,rs.format.z16,30)
+config.enable_stream(rs.stream.color,1280,720,rs.format.bgr8,30)
+# config.enable_device_from_file(
+#     "C:/Users/BHS2SGP/Documents/20210318_142227.bag")
 
 # start reading frames
 # skip first 10 frames to allow auto exposure to adjust
