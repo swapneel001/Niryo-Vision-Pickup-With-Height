@@ -36,7 +36,7 @@ def get_height_pixel(color_frame, color_image_workspace, rect, bigrect):
     #colorizer = rs.colorizer()
     color_image_full = np.asanyarray(color_frame.get_data())
     gray = cv2.cvtColor(color_image_full, cv2.COLOR_BGR2GRAY)
-    color_image_full = cv2.cvtColor(color_image_full, cv2.COLOR_BGR2RGB)
+    #color_image_full = cv2.cvtColor(color_image_full, cv2.COLOR_BGR2RGB)
     found = None
     for scale in np.linspace(0.2, 1.0, 50)[::-1]:
         resized = imutils.resize(gray, width=int(gray.shape[1]*scale))
@@ -63,7 +63,7 @@ def get_height_pixel(color_frame, color_image_workspace, rect, bigrect):
     cv2.rectangle(color_image_full, (startX, startY), (endX, endY), 255, 2)
     cv2.rectangle(color_image_full, (newrect[0], newrect[1]), (
         newrect[0]+newrect[2], newrect[1]+newrect[3]), 255, 2)
-    cv2.imshow("Location in full image ", color_image_full)
+    # cv2.imshow("Location in full image ", color_image_full)
     key = cv2.waitKey(1)
     if key == 27:
         quit()
@@ -86,7 +86,10 @@ def get_frames():
 
 def distance():
     """Function to get object's height by calculating distance from camera"""
+    counter = 0
+    obj_found = False
     while True:
+        counter += 1
         frames = pipe.wait_for_frames()
         align = rs.align(rs.stream.color)
         frames = align.process(frames)
@@ -101,11 +104,11 @@ def distance():
 
         # extract image workspace
         try:
-            print("Trying to find workspace ")
+            #print("Trying to find workspace ")
             color_image, depth_image = extract_img_workspace(
                 color_image, depth_image, workspace_ratio=0.37)
-            print("workspace shape is", color_image.shape[0:2])
-            color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+            #print("workspace shape is", color_image.shape[0:2])
+            #color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
             #print("Size of color image is {}".format(color_image.shape))
             color_image = cv2.rotate(color_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
             depth_image = cv2.rotate(depth_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
@@ -129,7 +132,7 @@ def distance():
 
         thresh = cv2.threshold(mask, 0, 255,
                             cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-        cv2.imshow("thresh", thresh)
+        # cv2.imshow("thresh", thresh)
 
         # getting contours of objects (black pixels) on belt (white pixels)
         cnts, heirarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
@@ -149,7 +152,7 @@ def distance():
                 x_values = [box[0][0], box[1][0], box[2][0], box[3][0]]
                 # cv2.drawContours(color_image,[box],0,(0,255),2)
                 # cv2.imshow('Bounding Box',color_image)
-                if min(x_values) > 220 and max(x_values) < 520:
+                if min(x_values) > 220 and max(x_values) < 525:
                     selected_cnts.append(cnt)
 
             cnt = max(selected_cnts, key=cv2.contourArea)
@@ -158,17 +161,18 @@ def distance():
             box = cv2.boxPoints(rect)
             box = np.int0(box)
             cv2.drawContours(color_image, [box], 0, (0, 255), 2)
-            cv2.imshow('Bounding Box', color_image)
-            cv2.imshow('depth frame', depth_image)
-            obj_found = False
-            y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
-            maximum = max(y_values)
-            minimum = min(y_values)
-            if maximum < 195 and minimum > 5:
-                x, y = get_height_pixel(color_frame, color_image, rect, bigrect)
-                distance = depth_frame.get_distance(int(x), int(y))
-                print("Distance is : ", distance)
-            obj_found = True
+            if counter > 10:        #adding counter function to let contours auto adjust so that only the biggest contour is returned after exposure adjustment
+                # cv2.imshow('Bounding Box', color_image)
+                cv2.imshow('depth frame', depth_image)
+                obj_found = False
+                y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
+                maximum = max(y_values)
+                minimum = min(y_values)
+                if maximum < 195 and minimum > 5:
+                    x, y = get_height_pixel(color_frame, color_image, rect, bigrect)
+                    distance = depth_frame.get_distance(int(x), int(y))
+                    #print("Distance is : ", distance)
+                    obj_found = True
             key = cv2.waitKey(1)
             if key == 27:
                 quit()

@@ -2,6 +2,7 @@ from __future__ import division
 import os
 import cv2
 import re
+import math
 import numpy as np
 import sys
 from threading import Thread
@@ -9,6 +10,7 @@ import importlib.util
 import time
 from PIL import Image, ImageDraw, ImageFont
 import io
+#import conveyor_belt
 
 # utils_cnt has image processing functions, depth_calculate is code for RealSense
 import utils_cnt_robot
@@ -40,7 +42,22 @@ def get_area(rect):
     area = rect[1][0]*rect[1][1]
     return area
 
+def get_angle(rect):
+    angle = rect[-1]
+    size1,size2 = rect[1][0], rect[1][1]
+    ratio_size = float(size1)/float(size2)
+    if 1.25 > ratio_size > 0.75:
+        if angle < -45:
+            angle = 90 + angle
+    else:
+        if size1 < size2:
+            angle = angle + 180
+        else:
+            angle = angle + 90
 
+        if angle > 90:
+            angle = angle -180
+    return math.radians(angle)
 def check_center_tendency(rect):
     """Check if object is inside the workspace completely"""
     box = cv2.boxPoints(rect)
@@ -91,18 +108,19 @@ if __name__ == "__main__":
         # take image of workspace
         a, frame = take_img(client)
         if (frame is None):
+            
             continue
         frame = utils_cnt_robot.standardize_img(frame)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        image = Image.fromarray(frame)
-        im_width, im_height = image.size
+        shape = frame.shape
         # calculate mask for frame (black and white image)
         mask = utils_cnt_robot.objs_mask(frame)
         cv2.imshow('mask', mask)
+        frame_copy = frame.copy()
         # drawing region of interest on the color image
-        cv2.line(frame, (0, 220), (200, 220), (255, 0, 0), thickness_big)
-        cv2.line(frame, (0, 520), (200, 520), (0, 0, 255), thickness_big)
-        cv2.imshow("Robot Camera frame", frame)
+        cv2.line(frame_copy, (0, 220), (200, 220), (255, 0, 0), thickness_big)
+        cv2.line(frame_copy, (0, 520), (200, 520), (0, 0, 255), thickness_big)
+        cv2.imshow("Robot Camera frame", frame_copy)
         # detect objects using contours and draw box around them
         obj_found = True
         try:
@@ -116,33 +134,35 @@ if __name__ == "__main__":
         new_area = get_area(rect)
         new_slope = get_slope(rect)
         # centre and angle of rotation of contour
-        centre, angle = rect[0], rect[2]
+        centre = rect[0]
+        angle = get_angle(rect)
+        print("Angle is:", angle)
         print("Centre of contour is", centre)
 
         center_tendency = check_center_tendency(rect)
-        if(center_tendency):
-            print("center object")
-        if not ((new_area >= 0.95*prev_area and new_area <= 1.05*prev_area)):
-            if(new_slope != prev_slope):
-                # use realsense data to get object distance
-                distance = depth_calculate.distance()
-                print("Distance to object is: {} m from the camera".format(distance))
+        # if(center_tendency):
+        #     print("center object")
+        # if not ((new_area >= 0.95*prev_area and new_area <= 1.05*prev_area)):
+        #     if(new_slope != prev_slope):
+        #         # use realsense data to get object distance
+        #         distance = depth_calculate.distance()
+        #         print("Distance to object is: {} m from the camera".format(distance))
 
-                key_box.append(bounding_box)
-                key_frame.append((frame))
-                print("Area of Detected object: ", new_area)
-                print("Slope of Detected object: ", new_slope)
-                # height = distance of camera to workspace - distance of camera to object top
-                height = 0.45 - distance
-                print(height)
-                prev_area = new_area
-                prev_slope = new_slope
-                if obj_found:
-                    obj_found, obj = client.get_target_pose_from_rel(
-                        "workspace", height, centre[0]/im_width, centre[1]/im_height, angle)
-                    client.pick_from_pose(*obj.to_list())
-                    client.place_from_pose(*drop_pose.to_list())
-                client.move_pose(*observation_pose.to_list())
+        #         print("Area of Detected object: ", new_area)
+        #         print("Slope of Detected object: ", new_slope)
+        #         # height = distance of camera to workspace - distance of camera to object top
+        #         height = 0.515 - distance
+        #         print("Height of object is : {} m".format(height))
+        #         prev_area = new_area
+        #         prev_slope = new_slope
+        #         if obj_found:
+        #             key_box.append(bounding_box)
+        #             key_frame.append((frame))
+        #             obj_found, obj = client.get_target_pose_from_rel(
+        #                 "workspace", height, centre[0]/shape[0], centre[1]/shape[1], angle)
+        #             client.pick_from_pose(*obj.to_list())
+        #             client.place_from_pose(*drop_pose.to_list())
+        #         client.move_pose(*observation_pose.to_list())
         key = cv2.waitKey(1)
         if key == 27:  # Esc key
             break
