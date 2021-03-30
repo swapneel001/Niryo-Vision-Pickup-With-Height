@@ -3,27 +3,62 @@ from niryo_one_camera import *
 import numpy as np
 import cv2
 import time
-
+from A3x3 import *
+import depth_calculate
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 
-# take an image of the workspace
+# functions to get slope, area, and center tendency of bounding box
+
+def get_slope(rect):
+    try:
+        if rect is None:
+            return None
+        slope = rect[1][0]/rect[1][1]
+        return slope
+    except:
+        return None
 
 
-def take_workspace_img(client):
-    a, mtx, dist = client.get_calibration_object()
-    while 1:
-        a, img_compressed = client.get_img_compressed()
-        img_raw = uncompress_image(img_compressed)
-        img = undistort_image(img_raw, mtx, dist)
-        img_work = extract_img_workspace(img, workspace_ratio=1)
-        if img_work is not None:
-            break
-        print("take_workspace_img failed")
-        return False, img
+def get_area(rect):
+    if rect is None:
+        return None
+    area = rect[1][0]*rect[1][1]
+    return area
+
+
+def get_angle(rect):
+    angle = rect[-1]
+    return math.radians(angle)
+
+
+def check_center_tendency(rect):
+    """Check if object is inside the workspace completely"""
+    box = cv2.boxPoints(rect)
+    box = np.int0(box)
+    x_values = [box[0][0], box[1][0], box[2][0], box[3][0]]
+    maximum = max(x_values)
+    minimum = min(x_values)
+    if maximum < 197 and minimum > 3:
+        return True
+    else:
+        return False
+
+# capture workspace image
+def take_img(client):
+    img_work = depth_calculate.get_frames()
+    try:
+        img_work, _ = extract_img_workspace(
+            img_work, img_work, workspace_ratio=0.37)
+        print("Workspace shape at robot side", img_work.shape)
+    except:
+        print("No workspace detected")
     return True, img_work
 
+
 # calculate a mask
+
+
 def objs_mask(img):
     boundaries = [([0, 50, 0], [100, 255, 100])]
     for (lower, upper) in boundaries:
@@ -32,7 +67,13 @@ def objs_mask(img):
         mask = cv2.inRange(img, lower, upper)
     thresh = cv2.threshold(
         mask, 0, 255, cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    area1 = np.array([[[0, 0], [200, 0], [200, 20], [0, 20]]], dtype=np.int32)
+    cv2.fillPoly(thresh, area1, 0)
+    area2 = np.array(
+        [[[0, 520], [200, 520], [200, 541], [0, 541]]], dtype=np.int32)
+    cv2.fillPoly(thresh, area2, 0)
     return thresh
+
 
 def bounding_box(frame, mask):
     """Get bounding box of object"""
@@ -42,25 +83,29 @@ def bounding_box(frame, mask):
     if cnts is not None:
         counter = 0
         while counter < 10:
-            counter +=1
+            counter += 1
             for cnt in cnts:
-                bigrect= cv2.boundingRect(cnt)
+                bigrect = cv2.boundingRect(cnt)
                 rect = cv2.minAreaRect(cnt)
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
-                y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
-                if min(y_values) > 220 and max(y_values)<530:
+                y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
+                if min(y_values) > 220:
                     selected_cnts.append(cnt)
-        cnt = max(selected_cnts, key = cv2.contourArea)
+        cnt = max(selected_cnts, key=cv2.contourArea)
         # for cnt in selected_cnts:
         bigrect = cv2.boundingRect(cnt)
         rect = cv2.minAreaRect(cnt)
         box = cv2.boxPoints(rect)
         box = np.int0(box)
-        cv2.drawContours(frame,[box],0,(0,255),2)
-        cv2.imshow('Bounding Box',frame)
-        return box,rect
+        cv2.drawContours(frame, [box], 0, (0, 255), 2)
+       # cv2.imshow('Bounding Box', frame)
+        frameCopy = frame.copy()
+        frameCopy = cv2.rotate(frameCopy,cv2.ROTATE_90_COUNTERCLOCKWISE)
+        Display3x3 ("Bounding Box", frameCopy, 3)
+        return box, rect
     return None
+
 
 def standardize_img(img):
     array_type = img.dtype
@@ -77,6 +122,8 @@ def standardize_img(img):
     return img
 
 # Uncompress and Undistort image
+
+
 def uncompress_image(compressed_image):
     """
     Take a compressed img and return an OpenCV image

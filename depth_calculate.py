@@ -1,9 +1,10 @@
 import pyrealsense2 as rs
-import utils_cnt_robot
+import utils
 import cv2
 import numpy as np
 import imutils
 from niryo_one_camera import *
+from A3x3 import *
 
 # set up camera
 pipe = rs.pipeline()
@@ -11,7 +12,7 @@ config = rs.config()
 config.enable_stream(rs.stream.depth,1280,720,rs.format.z16,30)
 config.enable_stream(rs.stream.color,1280,720,rs.format.bgr8,30)
 # config.enable_device_from_file(
-#     "C:/Users/BHS2SGP/Documents/20210318_142227.bag")
+#     "C:/Users/BHS2SGP/Documents/recording2.bag")
 
 # start reading frames
 # skip first 10 frames to allow auto exposure to adjust
@@ -63,7 +64,8 @@ def get_height_pixel(color_frame, color_image_workspace, rect, bigrect):
     cv2.rectangle(color_image_full, (startX, startY), (endX, endY), 255, 2)
     cv2.rectangle(color_image_full, (newrect[0], newrect[1]), (
         newrect[0]+newrect[2], newrect[1]+newrect[3]), 255, 2)
-    # cv2.imshow("Location in full image ", color_image_full)
+    #cv2.imshow("Location in full image ", color_image_full)
+    Display3x3("Location in full image", color_image_full, 4)
     key = cv2.waitKey(1)
     if key == 27:
         quit()
@@ -83,6 +85,7 @@ def get_frames():
     depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
     color_image = np.asanyarray(color_frame.get_data())
     return color_image
+
 
 def distance():
     """Function to get object's height by calculating distance from camera"""
@@ -117,7 +120,7 @@ def distance():
             if depth_image_dim != color_colormap_dim:
                 color_image = cv2.resize(color_image, dsize=(
                     depth_image_dim[1], depth_image_dim[0]), interpolation=cv2.INTER_AREA)
-            color_image = utils_cnt_robot.standardize_img(color_image)
+            #color_image = utils_cnt_robot.standardize_img(color_image)
         except:
             continue
 
@@ -132,14 +135,22 @@ def distance():
 
         thresh = cv2.threshold(mask, 0, 255,
                             cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
-        # cv2.imshow("thresh", thresh)
+
+        # filling areas between markers and green belt with black -> region of no interest
+        area1 = np.array([[[0, 0], [20, 0], [20, 200], [0, 200]]], dtype=np.int32)
+        cv2.fillPoly(thresh, area1, 0)
+        area2 = np.array(
+            [[[520, 0], [541, 0], [541, 200], [520, 200]]], dtype=np.int32)
+        cv2.fillPoly(thresh, area2, 0)
+        #cv2.imshow("thresh", thresh)
+        Display3x3("Thresh", thresh, 2)
 
         # getting contours of objects (black pixels) on belt (white pixels)
         cnts, heirarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
                                         cv2.CHAIN_APPROX_SIMPLE)[-2:]
-        print(len(cnts))
-        cv2.line(color_image, (220, 0), (220, 200), (0, 0, 255), thickness_big)
-        cv2.line(color_image, (520, 0), (520, 200), (0, 0, 255), thickness_big)
+        # print(len(cnts))
+        cv2.line(color_image, (220, 0), (220, 200), (0, 0, 255), thickness_small)
+        cv2.line(color_image, (525, 0), (525, 200), (0, 0, 255), thickness_small)
         selected_cnts = []
         if cnts is not None:
             # print(len(cnts))
@@ -152,7 +163,7 @@ def distance():
                 x_values = [box[0][0], box[1][0], box[2][0], box[3][0]]
                 # cv2.drawContours(color_image,[box],0,(0,255),2)
                 # cv2.imshow('Bounding Box',color_image)
-                if min(x_values) > 220 and max(x_values) < 525:
+                if min(x_values) > 220:
                     selected_cnts.append(cnt)
 
             cnt = max(selected_cnts, key=cv2.contourArea)
@@ -160,19 +171,25 @@ def distance():
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
             box = np.int0(box)
+            area = rect [1][0]*rect[1][1]
+            print("Area of contour is :" ,area)
             cv2.drawContours(color_image, [box], 0, (0, 255), 2)
-            if counter > 10:        #adding counter function to let contours auto adjust so that only the biggest contour is returned after exposure adjustment
-                # cv2.imshow('Bounding Box', color_image)
-                cv2.imshow('depth frame', depth_image)
-                obj_found = False
-                y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
-                maximum = max(y_values)
-                minimum = min(y_values)
-                if maximum < 195 and minimum > 5:
-                    x, y = get_height_pixel(color_frame, color_image, rect, bigrect)
-                    distance = depth_frame.get_distance(int(x), int(y))
-                    #print("Distance is : ", distance)
-                    obj_found = True
+            if area> 500:
+                if counter > 10:  # adding counter function to let contours auto adjust so that only the biggest contour is returned after exposure adjustment
+                    #cv2.imshow('Bounding Box', color_image)
+                    Display3x3("Bounding box", color_image, 1)
+                    #cv2.imshow('depth frame', depth_image)
+                    Display3x3("depth frame", depth_image, 3)
+                    obj_found = False
+                    y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
+                    maximum = max(y_values)
+                    minimum = min(y_values)
+                    if maximum < 195 and minimum > 5:
+                        x, y = get_height_pixel(
+                            color_frame, color_image, rect, bigrect)
+                        distance = depth_frame.get_distance(int(x), int(y))
+                        #print("Distance is : ", distance)
+                        obj_found = True
             key = cv2.waitKey(1)
             if key == 27:
                 quit()
