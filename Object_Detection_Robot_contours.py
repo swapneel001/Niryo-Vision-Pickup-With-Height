@@ -81,8 +81,6 @@ if __name__ == "__main__":
         # centre and angle of rotation of contour
         centre = rect[0]
         angle = utils.get_angle(rect)
-        print("Angle is:", angle)
-        print("Centre of contour is", centre)
 
         center_tendency = utils.check_center_tendency(rect)
         if(center_tendency):
@@ -90,6 +88,7 @@ if __name__ == "__main__":
                 if(new_slope != prev_slope):
                     # use realsense data to get object distance
                     distance = depth_calculate.distance()
+                    print("Centre of contour is", centre)
                     print("Distance to object is: {} m from the camera".format(distance))
 
                     print("Area of Detected object: ", new_area)
@@ -106,7 +105,7 @@ if __name__ == "__main__":
                             "workspace", height,  centre[0]/shape[1],centre[1]/shape[0], 0)
                         print("Relative positions are {},{}".format(centre[0]/shape[1],(centre[1]/shape[0])))
                         client.pick_from_pose(*obj.to_list())
-                        print("object  pick up pose")
+                        print("Object Pick Up Pose")
                         print(obj)
                         client.place_from_pose(*drop_pose.to_list())
                     client.move_pose(*observation_pose.to_list())

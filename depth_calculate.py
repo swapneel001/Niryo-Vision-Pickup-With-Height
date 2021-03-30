@@ -172,7 +172,6 @@ def distance():
             box = cv2.boxPoints(rect)
             box = np.int0(box)
             area = rect [1][0]*rect[1][1]
-            print("Area of contour is :" ,area)
             cv2.drawContours(color_image, [box], 0, (0, 255), 2)
             if area> 500:
                 if counter > 10:  # adding counter function to let contours auto adjust so that only the biggest contour is returned after exposure adjustment
