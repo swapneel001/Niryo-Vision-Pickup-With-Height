@@ -65,7 +65,7 @@ def get_height_pixel(color_frame, color_image_workspace, rect, bigrect):
     cv2.rectangle(color_image_full, (newrect[0], newrect[1]), (
         newrect[0]+newrect[2], newrect[1]+newrect[3]), 255, 2)
     #cv2.imshow("Location in full image ", color_image_full)
-    Display3x3("Location in full image", color_image_full, 4)
+    Display3x3("Location in full image", color_image_full, 3)
     key = cv2.waitKey(1)
     if key == 27:
         quit()
@@ -143,7 +143,7 @@ def distance():
             [[[520, 0], [541, 0], [541, 200], [520, 200]]], dtype=np.int32)
         cv2.fillPoly(thresh, area2, 0)
         #cv2.imshow("thresh", thresh)
-        Display3x3("Thresh", thresh, 2)
+        #Display3x3("Thresh", thresh, 2)
 
         # getting contours of objects (black pixels) on belt (white pixels)
         cnts, heirarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
@@ -164,9 +164,12 @@ def distance():
                 # cv2.drawContours(color_image,[box],0,(0,255),2)
                 # cv2.imshow('Bounding Box',color_image)
                 if min(x_values) > 220:
-                    selected_cnts.append(cnt)
-
-            cnt = max(selected_cnts, key=cv2.contourArea)
+                    if cv2.contourArea(cnt)>500:
+                        selected_cnts.append(cnt)
+            try:
+                cnt = max(selected_cnts, key=cv2.contourArea)
+            except:
+                return None
             bigrect = cv2.boundingRect(cnt)
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
@@ -176,9 +179,9 @@ def distance():
             if area> 500:
                 if counter > 10:  # adding counter function to let contours auto adjust so that only the biggest contour is returned after exposure adjustment
                     #cv2.imshow('Bounding Box', color_image)
-                    Display3x3("Bounding box", color_image, 1)
+                    #Display3x3("Bounding box", color_image, 1)
                     #cv2.imshow('depth frame', depth_image)
-                    Display3x3("depth frame", depth_image, 3)
+                    Display3x3("depth frame", depth_image, 4)
                     obj_found = False
                     y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
                     maximum = max(y_values)

@@ -42,11 +42,14 @@ if __name__ == "__main__":
     a = False
     client.move_pose(*observation_pose.to_list())
 
+    NO_OBJECT = 0
+    PARTIAL_OBJECT = 1
+    FULL_OBJECT = 2
+
     while "User presses esc":
         # take image of workspace
         a, frame = utils.take_img(client)
         if (frame is None):
-
             continue
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         shape = frame.shape
@@ -55,7 +58,7 @@ if __name__ == "__main__":
         #cv2.imshow('mask', mask)
         maskCopy = mask.copy()
         maskCopy = cv2.rotate(maskCopy,cv2.ROTATE_90_COUNTERCLOCKWISE)
-        Display3x3("mask",maskCopy,2)
+        Display3x3("mask",maskCopy,1)
 
         frame_copy = frame.copy()
         # drawing region of interest on the color image
@@ -64,27 +67,31 @@ if __name__ == "__main__":
         cv2.line(frame_copy, (0, 525), (200, 525),
                  (0, 0, 255), thickness_small)
         #cv2.imshow("Robot Camera frame", frame_copy)
-        frame_copy = cv2.rotate(frame_copy,cv2.ROTATE_90_COUNTERCLOCKWISE)
-        Display3x3("Robot Camera frame",frame_copy,1)
         # detect objects using contours and draw box around them
         obj_found = True
         try:
-            bounding_box, rect = utils.bounding_box(frame, mask)
+            bounding_box, rect, centre = utils.bounding_box(frame, mask)
         except TypeError:
             print("No object detected")
             obj_found = False
+            state = NO_OBJECT
+            if state==NO_OBJECT:
+                print("State of the belt is : ",state)
             continue
-
+        state = PARTIAL_OBJECT
         key = True
         new_area = utils.get_area(rect)
         new_slope = utils.get_slope(rect)
         # centre and angle of rotation of contour
-        centre = rect[0]
+        #centre = rect[0]
         angle = utils.get_angle(rect)
 
         center_tendency = utils.check_center_tendency(rect)
         if(center_tendency):
-            if ((new_area >= 1.10*prev_area or new_area <= 0.9*prev_area)):
+            state = FULL_OBJECT
+            if state==FULL_OBJECT:
+                print ("State of the belt is :",state)
+            if ((new_area > 1.15*prev_area or new_area < 0.95*prev_area)):
                 if(new_slope != prev_slope):
                     # use realsense data to get object distance
                     distance = depth_calculate.distance()
@@ -110,8 +117,16 @@ if __name__ == "__main__":
                         client.place_from_pose(*drop_pose.to_list())
                     client.move_pose(*observation_pose.to_list())
         key = cv2.waitKey(1)
+        time.sleep(0.5)
         if key == 27:  # Esc key
-            break
+            print("Number of key images: ", len(frame))
+            client.set_learning_mode(True)
+            quit()
 
-    print("Number of key images: ", len(frame))
-    client.set_learning_mode(True)
+
+        if state==PARTIAL_OBJECT:
+            print( "State of the belt is :",state)
+        else:
+            print ("State of the belt is :", state, "NONE CONDITION")
+
+

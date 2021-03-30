@@ -24,6 +24,6 @@ drop_pose = PoseObject(  # position for the robot to place object
     roll=0, pitch=1.57, yaw=0,
 )
 observation_pose = PoseObject(  # position for the robot to watch the workspace
-    x=0.111, y=0.007, z=0.225,
-    roll=0.255, pitch=0.992, yaw=0.070,
+    x=0.067, y=0.004, z=0.197,
+    roll=0.238, pitch=1.034, yaw=0.067,
 )

@@ -10,6 +10,7 @@ CAMERA_HEIGHT = 480
 
 # functions to get slope, area, and center tendency of bounding box
 
+
 def get_slope(rect):
     try:
         if rect is None:
@@ -32,6 +33,23 @@ def get_angle(rect):
     return math.radians(angle)
 
 
+def get_contour_centroid(contour):
+    """
+    Return centroid of an OpenCV Contour
+    :param contour: OpenCV Contour
+    :return: centroid
+    """
+    moments = cv2.moments(contour)
+    if moments['m00'] == 0:
+        rect = cv2.boundingRect(contour)
+        cx, cy, _, _ = rect
+    else:
+        cx = int(moments['m10'] / moments['m00'])
+        cy = int(moments['m01'] / moments['m00'])
+
+    return cx, cy
+
+
 def check_center_tendency(rect):
     """Check if object is inside the workspace completely"""
     box = cv2.boxPoints(rect)
@@ -45,12 +63,17 @@ def check_center_tendency(rect):
         return False
 
 # capture workspace image
+
+
 def take_img(client):
     img_work = depth_calculate.get_frames()
     try:
         img_work, _ = extract_img_workspace(
             img_work, img_work, workspace_ratio=0.37)
-        print("Workspace shape at robot side", img_work.shape)
+        img_work_copy = img_work.copy()
+        img_work_copy = cv2.rotate(img_work_copy,cv2.ROTATE_90_COUNTERCLOCKWISE)
+        Display3x3("Camera feed + Object Box", img_work_copy, 2)
+        #print("Workspace shape at robot side", img_work.shape)
     except:
         print("No workspace detected")
     return True, img_work
@@ -91,8 +114,12 @@ def bounding_box(frame, mask):
                 box = np.int0(box)
                 y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
                 if min(y_values) > 220:
-                    selected_cnts.append(cnt)
-        cnt = max(selected_cnts, key=cv2.contourArea)
+                    if cv2.contourArea(cnt)>500:
+                        selected_cnts.append(cnt)
+        try:
+            cnt = max(selected_cnts, key=cv2.contourArea)
+        except:
+            return None
         # for cnt in selected_cnts:
         bigrect = cv2.boundingRect(cnt)
         rect = cv2.minAreaRect(cnt)
@@ -101,9 +128,10 @@ def bounding_box(frame, mask):
         cv2.drawContours(frame, [box], 0, (0, 255), 2)
        # cv2.imshow('Bounding Box', frame)
         frameCopy = frame.copy()
-        frameCopy = cv2.rotate(frameCopy,cv2.ROTATE_90_COUNTERCLOCKWISE)
-        Display3x3 ("Bounding Box", frameCopy, 3)
-        return box, rect
+        frameCopy = cv2.rotate(frameCopy, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        Display3x3("Camera feed + Object Box", frameCopy, 2)
+        centre = get_contour_centroid(cnt)
+        return box, rect, centre
     return None
 
 
