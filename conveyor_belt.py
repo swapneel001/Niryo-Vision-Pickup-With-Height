@@ -24,8 +24,7 @@
 
 import time
 import dae_RelayBoard
-import depth_calculate
-import utils
+
 
 dr = dae_RelayBoard.DAE_RelayBoard(dae_RelayBoard.DAE_RELAYBOARD_TYPE_4)
 
@@ -45,12 +44,5 @@ def turnOff():
     dr.setAllStatesOff()
     time.sleep(0.5)
     print(dr.getStates())
-
-time.sleep(0.5)
-turnOff()
-
-def scanBelt():
-    turnOn():
-    while True:
-        
+ 
 # dr.disconnect()

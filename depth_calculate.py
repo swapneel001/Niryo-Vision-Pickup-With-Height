@@ -89,6 +89,7 @@ def get_frames():
 
 def distance():
     """Function to get object's height by calculating distance from camera"""
+    "obtaining distance"
     counter = 0
     obj_found = False
     while True:
