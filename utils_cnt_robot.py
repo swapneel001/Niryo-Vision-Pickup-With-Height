@@ -40,15 +40,19 @@ def bounding_box(frame, mask):
         mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[-2:]
     selected_cnts = []
     if cnts is not None:
-        for cnt in cnts:
-            bigrect= cv2.boundingRect(cnt)
-            rect = cv2.minAreaRect(cnt)
-            box = cv2.boxPoints(rect)
-            box = np.int0(box)
-            y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
-            if min(y_values) > 220 and max(y_values)<520:
-                selected_cnts.append(cnt)
+        counter = 0
+        while counter < 10:
+            counter +=1
+            for cnt in cnts:
+                bigrect= cv2.boundingRect(cnt)
+                rect = cv2.minAreaRect(cnt)
+                box = cv2.boxPoints(rect)
+                box = np.int0(box)
+                y_values = [box[0][1],box[1][1],box[2][1],box[3][1]]
+                if min(y_values) > 220 and max(y_values)<530:
+                    selected_cnts.append(cnt)
         cnt = max(selected_cnts, key = cv2.contourArea)
+        # for cnt in selected_cnts:
         bigrect = cv2.boundingRect(cnt)
         rect = cv2.minAreaRect(cnt)
         box = cv2.boxPoints(rect)
@@ -56,12 +60,10 @@ def bounding_box(frame, mask):
         cv2.drawContours(frame,[box],0,(0,255),2)
         cv2.imshow('Bounding Box',frame)
         return box,rect
-        
     return None
 
 def standardize_img(img):
     array_type = img.dtype
-
     # color balance normalizing
     color_mean = np.mean(img, axis=(0, 1))
     mean_color_mean = np.mean(color_mean)
