@@ -23,13 +23,14 @@ from robot_poses import observation_pose, drop_pose, pose1, pose2, pose3, pose4
 
 
 if __name__ == "__main__":
-    conveyor_belt.turnOn()
+
     # Setting up Niryo One
     client = NiryoOneClient()
     client.connect("10.10.10.47")
     client.calibrate(CalibrateMode.AUTO)
     client.change_tool(RobotTool.VACUUM_PUMP_1)
     client.create_workspace("workspace", pose1, pose2, pose3, pose4)
+    conveyor_belt.turnOn()
 
     # initialising arrays for various data required
     key_box = []
@@ -69,7 +70,7 @@ if __name__ == "__main__":
         obj_found = True
         try:
             bounding_box, rect, centre = utils.bounding_box(frame, mask)
-        except TypeError:
+        except :
             print("No object detected")
             obj_found = False
             conveyor_belt.turnOn()
@@ -88,9 +89,11 @@ if __name__ == "__main__":
 
         center_tendency = utils.check_center_tendency(rect)
         if(center_tendency):
-
-            if ((new_area > 1.15*prev_area or new_area < 0.95*prev_area)):
+            print("Center Object")
+            if ((new_area != prev_area)):
+                print("Area condition satisfied")
                 if(new_slope != prev_slope):
+                    print("Slope condition satisfied")
                     conveyor_belt.turnOff()
                     
                     #relocalise the object
@@ -116,12 +119,9 @@ if __name__ == "__main__":
                     # detect objects using contours and draw box around them
                     obj_found = True
 
-
                     bounding_box, rect, centre = utils.bounding_box(frame, mask)
                     new_area = utils.get_area(rect)
                     new_slope = utils.get_slope(rect)
-
-
 
                     # use realsense data to get object distance
                     distance = depth_calculate.distance()
@@ -146,10 +146,10 @@ if __name__ == "__main__":
                         print(obj)
                         client.place_from_pose(*drop_pose.to_list())
                     client.move_pose(*observation_pose.to_list())
-        key = cv2.waitKey(1)
+                    cv2.destroyAllWindows()
+        cv2.waitKey(1)
         if key == 27:  # Esc key
             client.set_learning_mode(True)
             print("Number of key images: ", len(frame))
             quit()
-
 

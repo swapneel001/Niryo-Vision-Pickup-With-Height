@@ -114,7 +114,7 @@ def bounding_box(frame, mask):
                 box = np.int0(box)
                 y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
                 if min(y_values) > 220:
-                    if cv2.contourArea(cnt)>1000:
+                    if cv2.contourArea(cnt)>500:
                         selected_cnts.append(cnt)
         try:
             cnt = max(selected_cnts, key=cv2.contourArea)
