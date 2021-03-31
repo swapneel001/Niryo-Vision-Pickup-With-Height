@@ -30,7 +30,7 @@ if __name__ == "__main__":
     client.calibrate(CalibrateMode.AUTO)
     client.change_tool(RobotTool.VACUUM_PUMP_1)
     client.create_workspace("workspace", pose1, pose2, pose3, pose4)
-    conveyor_belt.turnOn()
+
 
     # initialising arrays for various data required
     key_box = []
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     a = False
     key = True
     client.move_pose(*observation_pose.to_list())
-
+    conveyor_belt.turnOn()
     while "User presses esc":
         # take image of workspace
         a, frame = utils.take_img(client)
@@ -57,7 +57,7 @@ if __name__ == "__main__":
         #cv2.imshow('mask', mask)
         maskCopy = mask.copy()
         maskCopy = cv2.rotate(maskCopy, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        Display3x3("mask", maskCopy, 1)
+        #Display3x3("mask", maskCopy, 1)
 
         frame_copy = frame.copy()
         # drawing region of interest on the color image
@@ -70,7 +70,7 @@ if __name__ == "__main__":
         obj_found = True
         try:
             bounding_box, rect, centre = utils.bounding_box(frame, mask)
-        except:
+        except TypeError:
             print("No object detected")
             obj_found = False
             conveyor_belt.turnOn()
@@ -129,7 +129,7 @@ if __name__ == "__main__":
                 print("Area of Detected object: ", new_area)
                 print("Slope of Detected object: ", new_slope)
                 # height = distance of camera to workspace - distance of camera to object top
-                height = 0.507 - distance
+                height = 0.500 - distance
                 print("Height of object is : {} m".format(height))
                 prev_area = new_area
                 prev_slope = new_slope

@@ -65,7 +65,7 @@ def get_height_pixel(color_frame, color_image_workspace, rect, bigrect):
     cv2.rectangle(color_image_full, (newrect[0], newrect[1]), (
         newrect[0]+newrect[2], newrect[1]+newrect[3]), 255, 2)
     #cv2.imshow("Location in full image ", color_image_full)
-    Display3x3("Location in full image", color_image_full, 3)
+    Display3x3("Location in full image", color_image_full, 8)
     key = cv2.waitKey(1)
     if key == 27:
         quit()
@@ -182,7 +182,7 @@ def distance():
                     #cv2.imshow('Bounding Box', color_image)
                     #Display3x3("Bounding box", color_image, 1)
                     #cv2.imshow('depth frame', depth_image)
-                    Display3x3("depth frame", depth_image, 4)
+                    Display3x3("depth frame", depth_image, 5)
                     obj_found = False
                     y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
                     maximum = max(y_values)

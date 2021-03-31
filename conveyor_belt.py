@@ -44,5 +44,5 @@ def turnOff():
     dr.setAllStatesOff()
     time.sleep(0.5)
     print(dr.getStates())
-turnOff()
-# dr.disconnect()
+
+turnOn()# dr.disconnect()
