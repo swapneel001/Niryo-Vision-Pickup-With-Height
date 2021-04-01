@@ -3,20 +3,20 @@ from niryo_one_camera import *
 
 #Defining co-ordinates of poses for workspace 
 pose1 = PoseObject(
-    x=0.725, y=0.181, z=0.00,
-    roll=3.12, pitch=1.444, yaw=3.032,
+    x=0.718, y=0.194, z=0.00,
+    roll=3.094, pitch=1.519, yaw=3.06,
 )
 pose2 = PoseObject(
-    x=0.725, y=-0.019, z=0.00,
-    roll=3.12, pitch=1.444, yaw=3.032,
+    x=0.718, y=-0.006, z=0.00,
+    roll=3.094, pitch=1.519, yaw=3.06,
 )
 pose3 = PoseObject(
-    x=0.184, y=-0.019, z=0.00,
-    roll=3.12, pitch=1.444, yaw=3.032,
+    x=0.177, y=-0.006, z=0.00,
+    roll=3.094, pitch=1.519, yaw=3.06,
 )
 pose4 = PoseObject(
-    x=0.184, y=0.181, z=0.00,
-    roll=3.12, pitch=1.444, yaw=3.032,
+    x=0.177, y=0.194, z=0.00,
+    roll=3.094, pitch=1.519, yaw=3.06,
 )
 
 drop_pose = PoseObject(  # position for the robot to place object
