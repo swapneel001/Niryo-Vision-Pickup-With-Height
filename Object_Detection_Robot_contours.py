@@ -19,14 +19,14 @@ import depth_calculate
 
 from niryo_one_tcp_client import *
 from niryo_one_camera import *
-from robot_poses import observation_pose, drop_pose, pose1, pose2, pose3, pose4
+from robot_poses import observation_pose, drop_pose1, pose1, pose2, pose3, pose4
 
 
 if __name__ == "__main__":
 
     # Setting up Niryo One
     client = NiryoOneClient()
-    client.connect("10.10.10.47")
+    client.connect("10.10.10.81")
     client.calibrate(CalibrateMode.AUTO)
     client.change_tool(RobotTool.VACUUM_PUMP_1)
     client.create_workspace("workspace", pose1, pose2, pose3, pose4)
@@ -143,7 +143,7 @@ if __name__ == "__main__":
                     client.pick_from_pose(*obj.to_list())
                     print("Object Pick Up Pose")
                     print(obj)
-                    client.place_from_pose(*drop_pose.to_list())
+                    client.place_from_pose(*drop_pose1.to_list())
                 client.move_pose(*observation_pose.to_list())
                 cv2.destroyAllWindows()
         cv2.waitKey(1)

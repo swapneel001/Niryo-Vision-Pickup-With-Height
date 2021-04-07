@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import time
 from A3x3 import *
-import depth_calculate
+#import depth_calculate
 CAMERA_WIDTH = 640
 CAMERA_HEIGHT = 480
 
