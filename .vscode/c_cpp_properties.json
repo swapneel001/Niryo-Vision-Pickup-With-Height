@@ -1,0 +1,22 @@
+{
+  "configurations": [
+    {
+      "browse": {
+        "databaseFilename": "",
+        "limitSymbolsToIncludedHeaders": true
+      },
+      "includePath": [
+        "/home/niryo/catkin_ws/devel/include/**",
+        "/opt/ros/kinetic/include/**",
+        "/home/niryo/catkin_ws/src/dynamixel_sdk/include/**",
+        "/home/niryo/catkin_ws/src/mcp_can_rpi/include/**",
+        "/home/niryo/catkin_ws/src/niryo_one_debug/include/**",
+        "/home/niryo/catkin_ws/src/niryo_one_driver/include/**",
+        "/home/niryo/catkin_ws/src/obj_tf/include/**",
+        "/usr/include/**"
+      ],
+      "name": "ROS"
+    }
+  ],
+  "version": 4
+}

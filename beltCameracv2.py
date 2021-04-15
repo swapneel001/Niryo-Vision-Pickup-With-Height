@@ -1,13 +1,11 @@
 #! /usr/bin/env python
 
 import rospy
-from broadcastObj import ObjRecogniser
+from broadcastObjneel import ObjRecogniser
 import cv2
 import numpy as np
 from niryo_one_camera import *
 import A3x3
-from picamera import PiCamera
-from picamera.array import PiRGBArray
 import utils
 from PIL import Image
 
@@ -15,7 +13,7 @@ if __name__ == '__main__':
 
     rospy.init_node('obj_recog_camera')
     
-    #setting up camera
+    #setting up Pi camera(if using pi)
     #camera = PiCamera()
     #camera.resolution = (640,480)
     #camera.framerate = 30
@@ -30,7 +28,7 @@ if __name__ == '__main__':
         #frame = rawCapture.array
 
 
-        frame = Image.open("/home/pi/catkin_ws/src/obj_tf/src/wspic1.jpeg")
+        frame = Image.open("./wspic1.jpeg")
         frame = np.asarray(frame)
         #print("frame size",frame.shape)
         frame = cv2.resize(frame,None,fx = 0.2, fy =0.2, interpolation = cv2.INTER_AREA)
@@ -40,6 +38,7 @@ if __name__ == '__main__':
 
         try:
             frame,_=extract_img_workspace(frame,frame, workspace_ratio=0.37)
+            print("ws size ",frame.shape)
         except:
             print("no workspace detected")
         frameCopy = frame.copy()
@@ -59,10 +58,10 @@ if __name__ == '__main__':
         print("Centre of co-ordinates (x,y) wrt workspace origin is {}".format(centre))
         
         #dependant on camera position wrt workspace origin. re-measure for accuracy
-        x = x-7
-        y = y-28.7
+        x = float((x-7))/float(100)
+        y = ((y-28.7))/(100)
 
-        print("Centre of co-ordinates (x,y) wrt camera is {}".format(x,y))
+        print("Centre of co-ordinates (x,y) wrt camera is {},{}".format(x,y))
         objRecogniser = ObjRecogniser()
         objRecogniser.simulateObjRecognitionCallback(x,y)
 

@@ -30,12 +30,8 @@ class ObjRecogniser():
         msg = ObjRecognised()
         msg.detectedTime = detectedTime
         
-        if s.flip == 1:
-            s.flip = -1
-        else:
-            s.flip = 1
         
-        msg.x = s.flip*x
+        msg.x = x
         msg.y = y
         msg.z = 0.2
         
