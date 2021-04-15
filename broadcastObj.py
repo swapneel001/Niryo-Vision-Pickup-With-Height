@@ -159,13 +159,9 @@ def roboArmFollow(name):
 
 def run():
 
-<<<<<<< HEAD
+
     #objRecogniser = ObjRecogniser()
     #objRecogniser.simulateObjRecognition()    
-=======
-    objRecogniser = ObjRecogniser()
-    objRecogniser.simulateObjRecognition()    
->>>>>>> master
 
     # wait a bit to initialise subscriber
     rospy.sleep(1)
