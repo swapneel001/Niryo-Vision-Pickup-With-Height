@@ -22,6 +22,8 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
 
+        rate = rospy.Rate(1)
+
         # Capture frame-by-frame
         #rawCapture = PiRGBArray(camera)
         #camera.capture(rawCapture, format = 'bgr')
@@ -69,3 +71,4 @@ if __name__ == '__main__':
         key = cv2.waitKey(1)
         if key == 'escape':
             quit()
+        rate.sleep()
