@@ -21,9 +21,9 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
 
-        rate = rospy.Rate(0.5)
+        rate = rospy.Rate(0.2)
 
-        # Capture frame-by-frame
+        # Capture frame-by-frame (for RPi)
         #rawCapture = PiRGBArray(camera)
         #camera.capture(rawCapture, format = 'bgr')
         #frame = rawCapture.array
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         #print("frame size",frame.shape)
         frame = cv2.resize(frame,None,fx = 0.2, fy =0.2, interpolation = cv2.INTER_AREA)
         #print("Reized frame size ",frame.shape)
-        cv2.imshow("Full frame",frame)
+        #cv2.imshow("Full frame",frame)
 
 
         try:
