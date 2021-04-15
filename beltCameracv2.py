@@ -8,7 +8,6 @@ from niryo_one_camera import *
 import A3x3
 import utils
 from PIL import Image
-
 if __name__ == '__main__':
 
     rospy.init_node('obj_recog_camera')
@@ -29,7 +28,7 @@ if __name__ == '__main__':
         #camera.capture(rawCapture, format = 'bgr')
         #frame = rawCapture.array
 
-
+        
         frame = Image.open("./wspic1.jpeg")
         frame = np.asarray(frame)
         #print("frame size",frame.shape)
