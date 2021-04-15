@@ -129,7 +129,7 @@ if __name__ == "__main__":
                 print("Area of Detected object: ", new_area)
                 print("Slope of Detected object: ", new_slope)
                 # height = distance of camera to workspace - distance of camera to object top
-                height = 0.500 - distance
+                height = 0.495 - distance
                 print("Height of object is : {} m".format(height))
                 prev_area = new_area
                 prev_slope = new_slope

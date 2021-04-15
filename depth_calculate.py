@@ -87,114 +87,114 @@ def get_frames():
     return color_image
 
 
-# def distance():
-"""Function to get object's height by calculating distance from camera"""
-"obtaining distance"
-counter = 0
-obj_found = False
-while True:
-    counter += 1
-    frames = pipe.wait_for_frames()
-    align = rs.align(rs.stream.color)
-    frames = align.process(frames)
-    depth_frame = frames.get_depth_frame()
-    color_frame = frames.get_color_frame()
-    if not depth_frame or not color_frame:
-        continue
-    # convert frames into numpy arrays readable by opencv
-    colorizer = rs.colorizer()
-    depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
-    color_image = np.asanyarray(color_frame.get_data())
+def distance():
+    """Function to get object's height by calculating distance from camera"""
+    "obtaining distance"
+    counter = 0
+    obj_found = False
+    while True:
+        counter += 1
+        frames = pipe.wait_for_frames()
+        align = rs.align(rs.stream.color)
+        frames = align.process(frames)
+        depth_frame = frames.get_depth_frame()
+        color_frame = frames.get_color_frame()
+        if not depth_frame or not color_frame:
+            continue
+        # convert frames into numpy arrays readable by opencv
+        colorizer = rs.colorizer()
+        depth_image = np.asanyarray(colorizer.colorize(depth_frame).get_data())
+        color_image = np.asanyarray(color_frame.get_data())
 
-    # extract image workspace
-    try:
-        #print("Trying to find workspace ")
-        color_image, depth_image = extract_img_workspace(
-            color_image, depth_image, workspace_ratio=0.37)
-        #print("workspace shape is", color_image.shape[0:2])
-        #color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
-        #print("Size of color image is {}".format(color_image.shape))
-        color_image = cv2.rotate(color_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        depth_image = cv2.rotate(depth_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-        depth_image_dim = depth_image.shape
-        color_colormap_dim = color_image.shape
-        if depth_image_dim != color_colormap_dim:
-            color_image = cv2.resize(color_image, dsize=(
-                depth_image_dim[1], depth_image_dim[0]), interpolation=cv2.INTER_AREA)
-        #color_image = utils_cnt_robot.standardize_img(color_image)
-    except:
-        continue
+        # extract image workspace
+        try:
+            #print("Trying to find workspace ")
+            color_image, depth_image = extract_img_workspace(
+                color_image, depth_image, workspace_ratio=0.37)
+            #print("workspace shape is", color_image.shape[0:2])
+            #color_image = cv2.cvtColor(color_image, cv2.COLOR_BGR2RGB)
+            #print("Size of color image is {}".format(color_image.shape))
+            color_image = cv2.rotate(color_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            depth_image = cv2.rotate(depth_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            depth_image_dim = depth_image.shape
+            color_colormap_dim = color_image.shape
+            if depth_image_dim != color_colormap_dim:
+                color_image = cv2.resize(color_image, dsize=(
+                    depth_image_dim[1], depth_image_dim[0]), interpolation=cv2.INTER_AREA)
+            #color_image = utils_cnt_robot.standardize_img(color_image)
+        except:
+            continue
 
-    # masking the green background of the conveyor belt
-    # green will be white, everything else black
-    boundaries = [([0, 50, 0], [100, 255, 100])]
-    for (lower, upper) in boundaries:
-        lower = np.array(lower, dtype="uint8")
-        upper = np.array(upper, dtype="uint8")
-        mask = cv2.inRange(color_image, lower, upper)
-    # cv2.imshow("mask",mask)
+        # masking the green background of the conveyor belt
+        # green will be white, everything else black
+        boundaries = [([0, 50, 0], [100, 255, 100])]
+        for (lower, upper) in boundaries:
+            lower = np.array(lower, dtype="uint8")
+            upper = np.array(upper, dtype="uint8")
+            mask = cv2.inRange(color_image, lower, upper)
+        # cv2.imshow("mask",mask)
 
-    thresh = cv2.threshold(mask, 0, 255,
-                        cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+        thresh = cv2.threshold(mask, 0, 255,
+                            cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
 
-    # filling areas between markers and green belt with black -> region of no interest
-    area1 = np.array([[[0, 0], [20, 0], [20, 200], [0, 200]]], dtype=np.int32)
-    cv2.fillPoly(thresh, area1, 0)
-    area2 = np.array(
-        [[[520, 0], [541, 0], [541, 200], [520, 200]]], dtype=np.int32)
-    cv2.fillPoly(thresh, area2, 0)
-    #cv2.imshow("thresh", thresh)
-    #Display3x3("Thresh", thresh, 2)
+        # filling areas between markers and green belt with black -> region of no interest
+        area1 = np.array([[[0, 0], [20, 0], [20, 200], [0, 200]]], dtype=np.int32)
+        cv2.fillPoly(thresh, area1, 0)
+        area2 = np.array(
+            [[[520, 0], [541, 0], [541, 200], [520, 200]]], dtype=np.int32)
+        cv2.fillPoly(thresh, area2, 0)
+        #cv2.imshow("thresh", thresh)
+        #Display3x3("Thresh", thresh, 2)
 
-    # getting contours of objects (black pixels) on belt (white pixels)
-    cnts, heirarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
-                                    cv2.CHAIN_APPROX_SIMPLE)[-2:]
-    # print(len(cnts))
-    cv2.line(color_image, (220, 0), (220, 200), (0, 0, 255), thickness_small)
-    cv2.line(color_image, (525, 0), (525, 200), (0, 0, 255), thickness_small)
-    selected_cnts = []
-    if cnts is not None:
+        # getting contours of objects (black pixels) on belt (white pixels)
+        cnts, heirarchy = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                                        cv2.CHAIN_APPROX_SIMPLE)[-2:]
         # print(len(cnts))
-        for cnt in cnts:
-            # drawing the minimum area box
+        cv2.line(color_image, (220, 0), (220, 200), (0, 0, 255), thickness_small)
+        cv2.line(color_image, (525, 0), (525, 200), (0, 0, 255), thickness_small)
+        selected_cnts = []
+        if cnts is not None:
+            # print(len(cnts))
+            for cnt in cnts:
+                # drawing the minimum area box
+                bigrect = cv2.boundingRect(cnt)
+                rect = cv2.minAreaRect(cnt)
+                box = cv2.boxPoints(rect)
+                box = np.int0(box)
+                x_values = [box[0][0], box[1][0], box[2][0], box[3][0]]
+                # cv2.drawContours(color_image,[box],0,(0,255),2)
+                # cv2.imshow('Bounding Box',color_image)
+                if min(x_values) > 220:
+                    if cv2.contourArea(cnt)>500:
+                        selected_cnts.append(cnt)
+            try:
+                cnt = max(selected_cnts, key=cv2.contourArea)
+            except:
+                return None
             bigrect = cv2.boundingRect(cnt)
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
             box = np.int0(box)
-            x_values = [box[0][0], box[1][0], box[2][0], box[3][0]]
-            # cv2.drawContours(color_image,[box],0,(0,255),2)
-            # cv2.imshow('Bounding Box',color_image)
-            if min(x_values) > 220:
-                if cv2.contourArea(cnt)>500:
-                    selected_cnts.append(cnt)
-        try:
-            cnt = max(selected_cnts, key=cv2.contourArea)
-        except:
-            return None
-        bigrect = cv2.boundingRect(cnt)
-        rect = cv2.minAreaRect(cnt)
-        box = cv2.boxPoints(rect)
-        box = np.int0(box)
-        area = rect [1][0]*rect[1][1]
-        cv2.drawContours(color_image, [box], 0, (0, 255), 2)
-        if area> 500:
-            if counter > 10:  # adding counter function to let contours auto adjust so that only the biggest contour is returned after exposure adjustment
-                #cv2.imshow('Bounding Box', color_image)
-                #Display3x3("Bounding box", color_image, 1)
-                #cv2.imshow('depth frame', depth_image)
-                Display3x3("depth frame", depth_image, 5)
-                obj_found = False
-                y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
-                maximum = max(y_values)
-                minimum = min(y_values)
-                if maximum < 195 and minimum > 5:
-                    x, y = get_height_pixel(
-                        color_frame, color_image, rect, bigrect)
-                    distance = depth_frame.get_distance(int(x), int(y))
-                    #print("Distance is : ", distance)
-                    obj_found = True
-        key = cv2.waitKey(1)
-        if key == 27:
-            quit()
-        # if obj_found is True:
-        #     return distance
+            area = rect [1][0]*rect[1][1]
+            cv2.drawContours(color_image, [box], 0, (0, 255), 2)
+            if area> 500:
+                if counter > 10:  # adding counter function to let contours auto adjust so that only the biggest contour is returned after exposure adjustment
+                    #cv2.imshow('Bounding Box', color_image)
+                    #Display3x3("Bounding box", color_image, 1)
+                    #cv2.imshow('depth frame', depth_image)
+                    Display3x3("depth frame", depth_image, 5)
+                    obj_found = False
+                    y_values = [box[0][1], box[1][1], box[2][1], box[3][1]]
+                    maximum = max(y_values)
+                    minimum = min(y_values)
+                    if maximum < 195 and minimum > 5:
+                        x, y = get_height_pixel(
+                            color_frame, color_image, rect, bigrect)
+                        distance = depth_frame.get_distance(int(x), int(y))
+                        #print("Distance is : ", distance)
+                        obj_found = True
+            key = cv2.waitKey(1)
+            if key == 27:
+                quit()
+            if obj_found is True:
+                return distance
