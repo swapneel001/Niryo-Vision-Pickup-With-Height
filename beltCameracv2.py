@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     while not rospy.is_shutdown():
 
-        rate = rospy.Rate(1)
+        rate = rospy.Rate(0.5)
 
         # Capture frame-by-frame
         #rawCapture = PiRGBArray(camera)
@@ -60,8 +60,8 @@ if __name__ == '__main__':
         print("Centre of co-ordinates (x,y) wrt workspace origin is {}".format(centre))
         
         #dependant on camera position wrt workspace origin. re-measure for accuracy
-        x = float((x-7))/float(100)
-        y = ((y-28.7))/(100)
+        x = float((x-7))/float(1000)
+        y = ((y-28.7))/(1000)
 
         print("Centre of co-ordinates (x,y) wrt camera is {},{}".format(x,y))
         objRecogniser = ObjRecogniser()
